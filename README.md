@@ -1,16 +1,10 @@
-# GPU Tests PyTorch and TensorFlow tests for Ubuntu 25.10, Nvidia 5080 
+# GPU Tests for Ubuntu 25.10 w/ Nvidia 5080 
 
 ## Summary
-This repo has a couple of simple tests to confirm your GPU is being used for 
-PyRorch and TensorFlow. The tests were developed with claude.ai.
+This repo has a couple of simple tests to confirm the GPU is being used for 
+PyTorch and TensorFlow. The tests were developed with claude.ai.
 
-TensorFlow support for the 5080 is currently in the nightly build only.
-
-### Tests
-```
-python pytorch_cuda_test.py
-python tensorflow_cuda_test.py
-```
+NOTE: TensorFlow support for the 5080 is currently in the nightly build only on Ubuntu and requires setup found in `activate_tf.sh`.
 
 ## Running the tests
 
