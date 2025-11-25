@@ -1,0 +1,10 @@
+numpy
+pandas
+torch
+
+# use nightly build of tensorflow for 5080 support, see https://github.com/tensorflow/tensorflow/issues/90291
+#tensorflow
+tf-nightly
+
+# Install the CUDA compiler package which includes libdevice
+nvidia-cuda-nvcc-cu12
