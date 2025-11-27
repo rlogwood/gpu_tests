@@ -1,4 +1,12 @@
-# GPU Tests for Ubuntu 25.10 and Nvidia 5080 
+# GPU Tests for Ubuntu 24.04.3 LTS and Nvidia 5080 
+
+> NOTE: Initial testing was done on 25.10, but the screen would blank out randomly and 
+> there wasn't a resolution. 24.04.3 seems more stable on the test hardware, but 
+> sleep/resume doesn't work and had to be disabled and PCI was set to Gen4.
+> Additionally, the internal iGPU is blacklisted. MOBO is Asus ProArt X870E 
+> Creator WiFi with Ryzen 9950X. The machine is dual boot with Windows where
+> the 5080 is better supported, but GPU CUDA configuration for TensorFlow 
+> is only possible in WSL on Windows. 
 
 ## Summary
 This repo has a couple of simple tests to confirm the GPU is being used for 
@@ -17,9 +25,25 @@ pip install -r requirements
 
 ### In a new shell
 ```
-. activate_tf.sh
+. config_tf_env.sh
 python tensorflow_cuda_test.py
 python pytorch_cuda_test.py
+```
+
+### Note: JIT compilation and warning configuration in `tensorflow_cuda_test.py`
+
+```
+# Disable XLA JIT compilation BEFORE importing TensorFlow.
+# The RTX 5080 (Compute Capability 12.0) is not yet fully supported.
+# XLA's fused kernel compilation consumes excessive memory and crashes with OOM.
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=-1'
+
+# Suppress C++ level warnings (like "GPU interconnect information not available")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+# Disable oneDNN custom operations to avoid floating-point round-off warnings
+# and ensure consistent CPU results for comparison.
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 ```
 
 ## Background

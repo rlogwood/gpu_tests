@@ -3,10 +3,38 @@
 TensorFlow CUDA/GPU Test Program
 Tests CUDA availability and performs GPU computations
 """
+import os
+# Disable XLA JIT compilation BEFORE importing TensorFlow.
+# The RTX 5080 (Compute Capability 12.0) is not yet fully supported.
+# XLA's fused kernel compilation consumes excessive memory and crashes with OOM.
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=-1'
+
+# Suppress C++ level warnings (like "GPU interconnect information not available")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+# Disable oneDNN custom operations to avoid floating-point round-off warnings
+# and ensure consistent CPU results for comparison.
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 import tensorflow as tf
 import sys
 import time
+
+
+def set_memory_growth():
+    """
+    Enable memory growth to prevent OOM on unsupported architectures
+    where JIT compilation requires extra driver memory.
+    """
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print("✅ GPU Memory Growth enabled (essential for JIT compilation)")
+        except RuntimeError as e:
+            print(f"⚠️ Failed to set memory growth: {e}")
+
 
 def print_separator():
     print("=" * 70)
@@ -63,7 +91,10 @@ def show_gpu_info():
     print(f"Built with CUDA: {tf.test.is_built_with_cuda()}")
     
     # Check if GPU is actually being used
-    print(f"GPU Support Available: {tf.test.is_gpu_available(cuda_only=True) if hasattr(tf.test, 'is_gpu_available') else 'Use tf.config.list_physical_devices()'}")
+    #print(f"GPU Support Available: {tf.test.is_gpu_available(cuda_only=True) if hasattr(tf.test, 'is_gpu_available') else 'Use tf.config.list_physical_devices()'}")
+    # Check if GPU is actually being used
+    print(f"GPU Support Available: {len(tf.config.list_physical_devices('GPU')) > 0}")
+
 
 def test_gpu_computation():
     """Perform a simple computation on GPU"""
@@ -122,14 +153,18 @@ def test_gpu_computation():
         a_small_cpu = tf.identity(a_small_gpu)
         b_small_cpu = tf.identity(b_small_gpu)
         c_small_cpu = tf.matmul(a_small_cpu, b_small_cpu)
-    
+
+
     max_diff = tf.reduce_max(tf.abs(c_small_gpu - c_small_cpu)).numpy()
     print(f"Maximum difference between CPU and GPU results: {max_diff:.2e}")
-    
-    if max_diff < 1e-3:
-        print("✅ Results match (within tolerance)!")
+
+    # Tolerance increased to 5e-2 (0.05) to account for TensorFloat-32 (TF32)
+    # precision differences on modern NVIDIA GPUs (Ampere/Blackwell).
+    if max_diff < 5e-2:
+        print("✅ Results match (within tolerance for TF32 execution)!")
     else:
         print("⚠️  Large difference detected - possible issue")
+
 
 def test_tensor_operations():
     """Test various tensor operations on GPU"""
@@ -185,13 +220,22 @@ def test_keras_model():
     
     # Create a simple model
     model = tf.keras.Sequential([
-        tf.keras.layers.Dense(128, activation='relu', input_shape=(10,)),
+        tf.keras.layers.Input(shape=(10,)),
+        tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
-    
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    
+
+    # Explicitly disable JIT compilation in compile().
+    # RTX 5080 (Compute Capability 12.0) is not yet supported by XLA,
+    # and the JIT-compiled fused kernels crash with OOM.
+    model.compile(
+        optimizer='adam',
+        loss='binary_crossentropy',
+        metrics=['accuracy'],
+        jit_compile=False  # <-- This is the key fix
+    )
+
     print(f"Model created with {model.count_params()} parameters")
     
     # Generate dummy data
@@ -249,14 +293,44 @@ def test_mixed_precision():
     except Exception as e:
         print(f"⚠️  Mixed precision test failed: {e}")
 
+
+def test_mnist_data():
+    """Load MNIST dataset to verify Keras integration"""
+    print_separator()
+    print("MNIST DATA TEST")
+    print("Verifying Keras nightly is installed with TensorFlow nightly...")
+
+    try:
+        import keras
+        (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+
+        print(f"Training set shape: {x_train.shape}")
+        print(f"Test set shape:     {x_test.shape}")
+        print("✅ MNIST dataset loaded successfully!")
+
+    except Exception as e:
+        print(f"❌ Failed to load MNIST dataset: {e}")
+
 def main():
     print("\n" + "="*70)
     print("TensorFlow CUDA/GPU Test Program")
     print("="*70 + "\n")
-    
+
+    # Set memory growth before any other GPU operations
+    # with JIT compilation disabled, this is not be necessary.
+    #set_memory_growth()
+
+
+    # superceeded by TF_XLA_FLAGS='--tf_xla_auto_jit=-1'
+    # Disable XLA JIT compilation.
+    # The RTX 5080 (Compute Capability 12.0) is not yet fully supported.
+    # JIT compilation of fused kernels (XLA) consumes excessive memory and fails with OOM.
+    # tf.config.optimizer.set_jit(False)
+
+
     print(f"TensorFlow Version: {tf.__version__}")
     print(f"Python Version: {sys.version.split()[0]}")
-    
+
     # Test 1: GPU availability
     if not test_gpu_availability():
         print("\n❌ Exiting - No GPU detected")
@@ -276,6 +350,9 @@ def main():
     
     # Test 6: Mixed precision
     test_mixed_precision()
+
+    # Test 7: MNIST Data
+    test_mnist_data()
     
     # Summary
     print_separator()
@@ -284,7 +361,7 @@ def main():
     print("✅ All tests passed!")
     print("Your TensorFlow CUDA installation is working correctly.")
     print_separator()
-    
+
     return 0
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 # Source this before running TensorFlow: source setup_tf_gpu.sh
 
 # Activate virtual environment
-source .venv/bin/activate
+#source .venv/bin/activate
 
 # Add NVIDIA library paths from pip packages
 VENV_NVIDIA_LIBS=".venv/lib/python3.13/site-packages/nvidia"
