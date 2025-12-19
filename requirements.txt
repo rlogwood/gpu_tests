@@ -1,16 +1,19 @@
-numpy
-pandas
-torch
+# RTX 5080 FULL GPU - TF + PT CUDA 12.8 NIGHTLY
 
-# tensor flow nwo supports 5080
-#tensorflow[and-cuda]
+numpy<2.0
+pandas
+python-dotenv
+
+# PYTORCH CUDA 12.8 NIGHTLY (RTX 5080 sm_12.0)
+--extra-index-url https://download.pytorch.org/whl/nightly/cu128
+--pre
+torch
+torchvision
+torchaudio
+
+# TensorFlow (your working setup)
 tf-nightly[and-cuda]
 
-# use nightly build of tensorflow for 5080 support, see https://github.com/tensorflow/tensorflow/issues/90291
-# Install the CUDA compiler package which includes libdevice
-#nvidia-cuda-nvcc-cu12
-
-# cuda-nvcc is now v 13
 nvidia-cuda-nvcc
-
-python-dotenv
+ipykernel
+jupyter
