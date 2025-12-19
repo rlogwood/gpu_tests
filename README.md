@@ -12,7 +12,7 @@
 This repo has a couple of simple tests to confirm the GPU is being used for 
 PyTorch and TensorFlow. The tests were developed with claude.ai.
 
-NOTE: TensorFlow Ubuntu support for the 5080 is currently (11/24/25) found only in nightly build and requires setup found in `activate_tf.sh`.
+NOTE: As of 12/19/25 TensorFlow Ubuntu support for the 5080 is found only in nightly build and requires setup found in `config_tf_env.sh`.
 
 ## Running the tests
 

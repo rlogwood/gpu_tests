@@ -2,9 +2,15 @@ numpy
 pandas
 torch
 
-# use nightly build of tensorflow for 5080 support, see https://github.com/tensorflow/tensorflow/issues/90291
-#tensorflow
-tf-nightly
+# tensor flow nwo supports 5080
+#tensorflow[and-cuda]
+tf-nightly[and-cuda]
 
+# use nightly build of tensorflow for 5080 support, see https://github.com/tensorflow/tensorflow/issues/90291
 # Install the CUDA compiler package which includes libdevice
-nvidia-cuda-nvcc-cu12
+#nvidia-cuda-nvcc-cu12
+
+# cuda-nvcc is now v 13
+nvidia-cuda-nvcc
+
+python-dotenv

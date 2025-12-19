@@ -19,7 +19,15 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import tensorflow as tf
 import sys
 import time
+import os
+from dotenv import load_dotenv
 
+def load_show_env_vars():
+    load_dotenv()
+    print("TensorFlow environment variables:")
+    print(f"TF_XLA_FLAGS={os.getenv('TF_XLA_FLAGS')}")
+    print(f"TF_CPP_MIN_LOG_LEVEL={os.getenv('TF_CPP_MIN_LOG_LEVEL')}")
+    print(f"TF_ENABLE_ONEDNN_OPTS={os.getenv('TF_ENABLE_ONEDNN_OPTS')}")
 
 def set_memory_growth():
     """
@@ -101,29 +109,36 @@ def test_gpu_computation():
     print_separator()
     print("GPU COMPUTATION TEST")
     print_separator()
-    
+
     size = 5000
     print(f"Creating two {size}x{size} random matrices...")
-    
+
     # Test on GPU
     print("\nPerforming matrix multiplication on GPU...")
-    with tf.device('/GPU:0'):
-        a_gpu = tf.random.normal([size, size])
-        b_gpu = tf.random.normal([size, size])
-        
-        # Warm-up run
-        _ = tf.matmul(a_gpu, b_gpu)
-        
-        # Timed run
-        start = time.time()
-        c_gpu = tf.matmul(a_gpu, b_gpu)
-        # Force execution
-        _ = c_gpu.numpy()
-        end = time.time()
-        
-        gpu_time = end - start
-        print(f"✅ GPU computation completed in {gpu_time:.4f} seconds")
-    
+    try:
+        with tf.device('/GPU:0'):
+            # Using simple initialization to ensure the handle is valid
+            a_gpu = tf.random.normal([size, size])
+            b_gpu = tf.random.normal([size, size])
+
+            # Warm-up run
+            _ = tf.matmul(a_gpu, b_gpu)
+
+            # Timed run
+            start = time.time()
+            c_gpu = tf.matmul(a_gpu, b_gpu)
+            # Force execution
+            _ = c_gpu.numpy()
+            end = time.time()
+
+            gpu_time = end - start
+            print(f"✅ GPU computation completed in {gpu_time:.4f} seconds")
+    except Exception as e:
+        print(f"❌ GPU Computation failed: {e}")
+        print("This is likely due to Blackwell (RTX 5080) compatibility issues.")
+        print("Ensure you are using the nightly build: pip install tf-nightly")
+        return
+
     # Test on CPU
     print("\nComparing with CPU computation...")
     with tf.device('/CPU:0'):
@@ -171,57 +186,66 @@ def test_tensor_operations():
     print_separator()
     print("TENSOR OPERATIONS TEST")
     print_separator()
-    
-    with tf.device('/GPU:0'):
-        # Test 1: Basic operations
-        print("Test 1: Basic tensor operations...")
-        x = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0])
-        y = tf.constant([2.0, 3.0, 4.0, 5.0, 6.0])
-        
-        z = x + y
-        print(f"  Addition: {z.numpy()}")
-        
-        z = x * y
-        print(f"  Multiplication: {z.numpy()}")
-        
-        # Test 2: Neural network operations
-        print("\nTest 2: Neural network operations...")
-        input_tensor = tf.random.normal([32, 10])  # Batch of 32, 10 features
-        weights = tf.random.normal([10, 5])        # 10 inputs -> 5 outputs
-        bias = tf.random.normal([5])
-        
-        output = tf.matmul(input_tensor, weights) + bias
-        output = tf.nn.relu(output)  # ReLU activation
-        print(f"  Input shape: {input_tensor.shape}")
-        print(f"  Output shape: {output.shape}")
-        print("  ✅ Neural network operations work!")
-        
-        # Test 3: Gradients
-        print("\nTest 3: Gradient computation...")
-        x = tf.Variable(tf.random.normal([5, 5]))
-        
-        with tf.GradientTape() as tape:
-            y = x ** 2
-            z = tf.reduce_sum(y)
-        
-        gradients = tape.gradient(z, x)
-        print(f"  Variable created: {x.shape}")
-        print(f"  Gradient computed: {gradients is not None}")
-        print(f"  Gradient shape: {gradients.shape}")
-        print("  ✅ Gradient computation works!")
+
+    try:
+        with tf.device('/GPU:0'):
+            # Test 1: Basic operations
+            print("Test 1: Basic tensor operations...")
+            x = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0])
+            y = tf.constant([2.0, 3.0, 4.0, 5.0, 6.0])
+
+            z = x + y
+            print(f"  Addition: {z.numpy()}")
+
+            z = x * y
+            print(f"  Multiplication: {z.numpy()}")
+
+            # Test 2: Neural network operations
+            print("\nTest 2: Neural network operations...")
+            input_tensor = tf.random.normal([32, 10])  # Batch of 32, 10 features
+            weights = tf.random.normal([10, 5])        # 10 inputs -> 5 outputs
+            bias = tf.random.normal([5])
+
+            output = tf.matmul(input_tensor, weights) + bias
+            output = tf.nn.relu(output)  # ReLU activation
+            print(f"  Input shape: {input_tensor.shape}")
+            print(f"  Output shape: {output.shape}")
+            print("  ✅ Neural network operations work!")
+
+            # Test 3: Gradients
+            print("\nTest 3: Gradient computation...")
+            x = tf.Variable(tf.random.normal([5, 5]))
+
+            with tf.GradientTape() as tape:
+                y = x ** 2
+                z = tf.reduce_sum(y)
+
+            gradients = tape.gradient(z, x)
+            print(f"  Variable created: {x.shape}")
+            print(f"  Gradient computed: {gradients is not None}")
+            print(f"  Gradient shape: {gradients.shape}")
+            print("  ✅ Gradient computation works!")
+    except Exception as e:
+        print(f"❌ Gradient computation failed: {e}")
+        print("This is likely due to Blackwell (RTX 5080) compatibility issues.")
+        print("Ensure you are using the nightly build: pip install tf-nightly")
+        return
 
 def test_keras_model():
     """Test a simple Keras model on GPU"""
     print_separator()
     print("KERAS MODEL TEST")
     print_separator()
-    
+
+    # Clear session to ensure a clean slate for the new architecture
+    tf.keras.backend.clear_session()
+
     print("Creating a simple neural network...")
-    
+
     # Create a simple model
+    # We define the model and then compile it.
     model = tf.keras.Sequential([
-        tf.keras.layers.Input(shape=(10,)),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu', input_shape=(10,)),
         tf.keras.layers.Dense(64, activation='relu'),
         tf.keras.layers.Dense(1, activation='sigmoid')
     ])
@@ -233,18 +257,19 @@ def test_keras_model():
         optimizer='adam',
         loss='binary_crossentropy',
         metrics=['accuracy'],
-        jit_compile=False  # <-- This is the key fix
+        jit_compile=False
     )
 
     print(f"Model created with {model.count_params()} parameters")
-    
+
     # Generate dummy data
+    # Ensure data is created on the correct device by using tf.identity or similar
     x_train = tf.random.normal([1000, 10])
     y_train = tf.random.uniform([1000, 1], minval=0, maxval=2, dtype=tf.int32)
     y_train = tf.cast(y_train, tf.float32)
-    
+
     print("Training model for 3 epochs...")
-    
+
     # Train briefly
     start = time.time()
     history = model.fit(x_train, y_train, epochs=3, batch_size=32, verbose=0)
@@ -317,6 +342,26 @@ def main():
     print("="*70 + "\n")
 
     # Set memory growth before any other GPU operations
+    # This is critical for new architectures like RTX 5080 (Blackwell)
+    # to prevent CUDA_ERROR_INVALID_HANDLE and OOM errors.
+    try:
+        # Reset Keras state
+        tf.keras.backend.clear_session()
+
+        gpus = tf.config.list_physical_devices('GPU')
+        if gpus:
+            for gpu in gpus:
+                try:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                except RuntimeError as e:
+                    # Memory growth must be set before GPUs have been initialized
+                    print(f"  Note: {e}")
+            print("✅ GPU memory growth enabled")
+    except Exception as e:
+        print(f"⚠️ Could not set memory growth: {e}")
+
+
+    # Set memory growth before any other GPU operations
     # with JIT compilation disabled, this is not be necessary.
     #set_memory_growth()
 
@@ -365,4 +410,5 @@ def main():
     return 0
 
 if __name__ == "__main__":
+    load_show_env_vars()
     sys.exit(main())
