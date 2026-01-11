@@ -1,0 +1,15 @@
+# Core scientific stack
+numpy<2.0
+pandas
+python-dotenv
+
+# PyTorch CUDA 12.8 NIGHTLY (Blackwell / sm_12.0)
+--extra-index-url https://download.pytorch.org/whl/nightly/cu128
+--pre
+torch
+torchvision
+torchaudio
+
+# Dev / notebooks
+ipykernel
+jupyter

@@ -1,0 +1,16 @@
+# Core scientific stack
+numpy<2.0
+pandas
+python-dotenv
+
+# TensorFlow NIGHTLY with CUDA support
+--pre
+tf-nightly[and-cuda]
+
+# nvidia cuda libs needed?
+nvidia-cuda-nvcc
+
+
+# Dev / notebooks
+ipykernel
+jupyter

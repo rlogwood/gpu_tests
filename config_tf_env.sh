@@ -11,9 +11,14 @@ fi
 VENV_PYTHON_VERSION=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
 VENV_NVIDIA_LIBS="${VIRTUAL_ENV}/lib/python${VENV_PYTHON_VERSION}/site-packages/nvidia"
 
+echo "Checking presence of nvidia libs:"
+echo "VENV_PYTHON_VERSION={$VENV_PYTHON_VERSION}"
+echo "VENV_NVIDIA_LIBS={$VENV_NVIDIA_LIBS}"
+
 if [ ! -d "$VENV_NVIDIA_LIBS" ]; then
+    echo "Nvidia labs dir not found: {$VENV_NVIDIA_LIBS}"
     echo "❌ ERROR: Install NVIDIA libs: pip install tf-nightly[and-cuda]"
-    exit 1
+    return 1
 fi
 
 # BUILD LD_LIBRARY_PATH
